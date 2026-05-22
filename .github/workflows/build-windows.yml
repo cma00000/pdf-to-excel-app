@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build Apps
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:
@@ -38,4 +38,41 @@ jobs:
         with:
           name: PDF-to-Excel-Windows
           path: dist/PDF to Excel.exe
+          retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build .app
+        run: |
+          pyinstaller \
+            --windowed \
+            --name "PDF to Excel" \
+            --osx-bundle-identifier com.pdftable.excel \
+            --collect-all tkinterdnd2 \
+            --collect-all pdfplumber \
+            --collect-all pdfminer \
+            --hidden-import openpyxl \
+            --noconfirm \
+            app.py
+
+      - name: Zip .app for upload
+        run: cd dist && zip -r "PDF-to-Excel-macOS.zip" "PDF to Excel.app"
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDF-to-Excel-macOS
+          path: dist/PDF-to-Excel-macOS.zip
           retention-days: 30
